@@ -1,0 +1,40 @@
+services:
+  coqui-tts:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: coqui-xtts
+    restart: unless-stopped
+
+    ports:
+      - "5002:5002"
+
+    volumes:
+      - tts_models:/root/.local/share/tts
+      - ./samples:/samples
+
+    environment:
+      - COQUI_TOS_AGREED=1
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+      - PYTHONWARNINGS=ignore::FutureWarning
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    command: sleep infinity
+#    command: >
+#      tts-server
+#      --model_name tts_models/multilingual/multi-dataset/xtts_v2
+#      --use_cuda true
+#      --port 5002
+
+    shm_size: "2g"
+
+volumes:
+  tts_models:
