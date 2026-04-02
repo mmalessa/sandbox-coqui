@@ -8,10 +8,16 @@ A Docker-based sandbox for experimenting with [Coqui TTS](https://github.com/coq
 - NVIDIA GPU with CUDA 12.1 support
 - `nvidia-container-toolkit` installed on the host
 
-To install the NVIDIA container toolkit:
+To check whether the NVIDIA container toolkit is already installed:
 
 ```bash
-make prepare
+make nv-check
+```
+
+To install it:
+
+```bash
+make nv-prepare
 sudo systemctl restart docker
 ```
 
@@ -38,7 +44,7 @@ Put your text in `samples/input.txt`, then run:
 make tts-talk
 ```
 
-The output WAV file will be saved to `samples/test.wav`. The default language is Polish (`pl`) and the default speaker is `Wulf Carlevaro`.
+The output WAV file will be saved to `samples/test.wav`. The default language is Polish (`pl`).
 
 ### List available speakers
 

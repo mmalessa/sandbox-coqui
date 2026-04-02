@@ -28,8 +28,17 @@ sh:
 logs:
 	@$(DC) logs -f ${APP}
 
-.PHONY: prepare
-prepare:
+.PHONY: nv-check
+nv-check: ## Check if nvidia-container-toolkit is installed
+	@if dpkg -s nvidia-container-toolkit > /dev/null 2>&1; then \
+		echo "nvidia-container-toolkit is installed"; \
+	else \
+		echo "nvidia-container-toolkit is NOT installed. Run: make nv-prepare"; \
+		exit 1; \
+	fi
+
+.PHONY: nv-prepare
+nv-prepare: ## Install nvidia-container-toolkit and configure Docker runtime
 	sudo apt install -y wget
 	wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
 	sudo dpkg -i cuda-keyring_1.1-1_all.deb
@@ -48,6 +57,6 @@ tts-talk:
 	@$(DC) exec ${APP} tts \
 		--model_name tts_models/multilingual/multi-dataset/xtts_v2 \
 		--language_idx pl \
-		--speaker_idx "Wulf Carlevaro" \
+		--speaker_idx "Filip Traverse" \
 		--out_path /samples/test.wav \
 		--text "$(TEXT)"
