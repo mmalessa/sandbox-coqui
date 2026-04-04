@@ -7,6 +7,7 @@ from typing import Optional
 import torch
 from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 MODEL_NAME = "tts_models/multilingual/multi-dataset/xtts_v2"
@@ -149,3 +150,4 @@ async def health():
 
 
 app.include_router(router)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

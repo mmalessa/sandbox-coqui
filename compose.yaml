@@ -14,6 +14,7 @@ services:
       - tts_models:/root/.local/share/tts
       - ./samples:/samples
       - ./app.py:/app/app.py:ro
+      - ./static:/app/static:ro
 
     environment:
       - COQUI_TOS_AGREED=1

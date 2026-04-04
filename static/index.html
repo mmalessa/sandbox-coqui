@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coqui XTTS v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-size: 13px; }
+    input[type=range]    { accent-color: #3b82f6; width: 100%; cursor: pointer; }
+    input[type=checkbox] { accent-color: #3b82f6; cursor: pointer; }
+    input[type=radio]    { accent-color: #3b82f6; cursor: pointer; }
+    select option        { background: #1f2937; }
+
+    .lbl  { display: block; color: #9ca3af; font-size: 11px; font-weight: 500;
+            text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+    .ctrl { width: 100%; background: #1f2937; border: 1px solid #374151;
+            border-radius: 6px; padding: 5px 8px; color: #f3f4f6; outline: none;
+            font-size: 13px; }
+    .ctrl:focus { border-color: #3b82f6; }
+    .ctrl:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .slider-wrap { display: flex; flex-direction: column; gap: 2px; }
+    .slider-top  { display: flex; justify-content: space-between; align-items: baseline; }
+    .slider-name { color: #9ca3af; font-size: 11px; font-weight: 500;
+                   text-transform: uppercase; letter-spacing: .04em; }
+    .slider-val  { color: #60a5fa; font-size: 12px; font-weight: 600;
+                   font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100" style="padding: 16px 24px;">
+
+  <h1 class="text-lg font-bold text-white mb-4 leading-none">
+    Coqui XTTS v2
+    <span class="text-gray-500 font-normal text-xs ml-2">text-to-speech</span>
+  </h1>
+
+  <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
+
+    <!-- LEFT col -->
+    <div class="flex flex-col gap-3">
+
+      <div>
+        <label class="lbl">Text</label>
+        <textarea id="text" rows="5" class="ctrl resize-none"
+          placeholder="Enter text to synthesize…">Zażółć gęślą jaźń — klasyczny polski pangram do testowania syntezy mowy.</textarea>
+      </div>
+
+      <div class="grid gap-3" style="grid-template-columns: 1fr 1fr;">
+        <div>
+          <label class="lbl">Speaker</label>
+          <select id="speaker" class="ctrl">
+            <option disabled selected>Loading…</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Language</label>
+          <select id="language" class="ctrl">
+            <option disabled selected>Loading…</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="lbl">Reference voice <span class="normal-case text-gray-500">(WAV — overrides speaker &bull; mono, 22050 Hz, 16-bit PCM, 6–30 s)</span></label>
+        <div class="flex gap-2 items-center">
+          <label class="ctrl flex items-center gap-2 cursor-pointer hover:border-gray-500 transition-colors"
+                 style="padding: 4px 8px;">
+            <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+            </svg>
+            <span id="wav-filename" class="text-gray-400 truncate">Choose WAV file…</span>
+            <input type="file" id="speaker-wav" accept=".wav,audio/wav" class="hidden">
+          </label>
+          <button id="wav-clear" class="hidden ctrl shrink-0 text-gray-400 hover:text-white transition-colors"
+                  style="width: auto; padding: 4px 8px;">✕</button>
+        </div>
+      </div>
+
+      <div class="flex gap-5">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="do_sample" checked>
+          <span class="text-gray-300">Stochastic sampling</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="enable_text_splitting" checked>
+          <span class="text-gray-300">Split long text</span>
+        </label>
+      </div>
+
+    </div>
+
+    <!-- RIGHT col: sliders 2×3 -->
+    <div class="grid gap-x-5 gap-y-3" style="grid-template-columns: 1fr 1fr; align-content: start;">
+
+      <div class="slider-wrap">
+        <div class="slider-top">
+          <span class="slider-name">Speed</span>
+          <span id="val-speed" class="slider-val">1.0</span>
+        </div>
+        <input type="range" id="speed" min="0.1" max="3.0" step="0.1" value="1.0">
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-top">
+          <span class="slider-name">Temperature</span>
+          <span id="val-temperature" class="slider-val">0.75</span>
+        </div>
+        <input type="range" id="temperature" min="0.01" max="2.0" step="0.01" value="0.75">
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-top">
+          <span class="slider-name">Repetition penalty</span>
+          <span id="val-repetition_penalty" class="slider-val">5.0</span>
+        </div>
+        <input type="range" id="repetition_penalty" min="1.0" max="20.0" step="0.5" value="5.0">
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-top">
+          <span class="slider-name">Length penalty</span>
+          <span id="val-length_penalty" class="slider-val">1.0</span>
+        </div>
+        <input type="range" id="length_penalty" min="0.5" max="2.0" step="0.1" value="1.0">
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-top">
+          <span class="slider-name">Top-k</span>
+          <span id="val-top_k" class="slider-val">50</span>
+        </div>
+        <input type="range" id="top_k" min="1" max="100" step="1" value="50">
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-top">
+          <span class="slider-name">Top-p</span>
+          <span id="val-top_p" class="slider-val">0.85</span>
+        </div>
+        <input type="range" id="top_p" min="0.0" max="1.0" step="0.01" value="0.85">
+      </div>
+
+      <div style="grid-column: 1 / -1;">
+        <button id="reset-btn"
+          class="text-gray-500 hover:text-gray-300 text-xs transition-colors">
+          Reset parameters to defaults
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM: output controls -->
+  <div class="mt-4 flex flex-wrap items-center gap-4">
+
+    <div class="flex items-center gap-4">
+      <label class="flex items-center gap-1.5 cursor-pointer select-none">
+        <input type="radio" name="output_mode" value="play" checked>
+        <span class="text-gray-300">Play in browser</span>
+      </label>
+      <label class="flex items-center gap-1.5 cursor-pointer select-none">
+        <input type="radio" name="output_mode" value="download">
+        <span class="text-gray-300">Download WAV</span>
+      </label>
+    </div>
+
+    <button id="generate-btn"
+      class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
+             text-white font-semibold px-5 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+      <span id="btn-label">Generate</span>
+      <svg id="btn-spinner" class="hidden animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+      </svg>
+    </button>
+
+    <div id="error-msg" class="hidden text-red-400 text-xs bg-red-950 border border-red-800 rounded-lg px-3 py-1.5"></div>
+
+  </div>
+
+  <div id="audio-container" class="hidden mt-3">
+    <audio id="audio-player" controls class="w-full rounded-lg" style="height: 36px;"></audio>
+  </div>
+
+  <footer class="mt-6 pt-4 border-t border-gray-800 text-gray-600 text-xs">
+    &copy; 2026 mmalessa
+  </footer>
+
+  <script>
+    const API = '/api';
+
+    // Sliders
+    document.querySelectorAll('input[type=range]').forEach(s => {
+      const v = document.getElementById('val-' + s.id);
+      s.addEventListener('input', () => v.textContent = s.value);
+    });
+
+    // Speaker WAV file input
+    let speakerWavBase64 = null;
+
+    document.getElementById('speaker-wav').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        speakerWavBase64 = reader.result.split(',')[1];
+
+        document.getElementById('wav-filename').textContent = file.name;
+        document.getElementById('wav-filename').classList.replace('text-gray-400', 'text-white');
+        document.getElementById('wav-clear').classList.remove('hidden');
+        document.getElementById('speaker').disabled = true;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('wav-clear').addEventListener('click', () => {
+      speakerWavBase64 = null;
+      document.getElementById('speaker-wav').value = '';
+      document.getElementById('wav-filename').textContent = 'Choose WAV file…';
+      document.getElementById('wav-filename').classList.replace('text-white', 'text-gray-400');
+      document.getElementById('wav-clear').classList.add('hidden');
+      document.getElementById('speaker').disabled = false;
+    });
+
+    // Populate selects
+    async function loadOptions() {
+      try {
+        const [spkRes, langRes] = await Promise.all([
+          fetch(`${API}/speakers`),
+          fetch(`${API}/languages`),
+        ]);
+        const { speakers } = await spkRes.json();
+        const { languages } = await langRes.json();
+
+        document.getElementById('speaker').innerHTML = [...speakers].sort().map(s =>
+          `<option value="${s}"${s === 'Filip Traverse' ? ' selected' : ''}>${s}</option>`
+        ).join('');
+
+        document.getElementById('language').innerHTML = [...languages].sort().map(l =>
+          `<option value="${l}"${l === 'pl' ? ' selected' : ''}>${l}</option>`
+        ).join('');
+      } catch (e) {
+        console.error('Failed to load options', e);
+      }
+    }
+
+    loadOptions();
+
+    // Reset sliders to defaults
+    const DEFAULTS = { speed: 1.0, temperature: 0.75, repetition_penalty: 5.0,
+                       length_penalty: 1.0, top_k: 50, top_p: 0.85 };
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      for (const [id, val] of Object.entries(DEFAULTS)) {
+        const el = document.getElementById(id);
+        el.value = val;
+        document.getElementById('val-' + id).textContent = val;
+      }
+      document.getElementById('do_sample').checked = true;
+      document.getElementById('enable_text_splitting').checked = true;
+    });
+
+    // Generate
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+      const btn    = document.getElementById('generate-btn');
+      const label  = document.getElementById('btn-label');
+      const spin   = document.getElementById('btn-spinner');
+      const errEl  = document.getElementById('error-msg');
+      const audioCont   = document.getElementById('audio-container');
+      const audioPlayer = document.getElementById('audio-player');
+
+      errEl.classList.add('hidden');
+      audioCont.classList.add('hidden');
+      btn.disabled = true;
+      label.textContent = 'Generating…';
+      spin.classList.remove('hidden');
+
+      const mode = document.querySelector('input[name=output_mode]:checked').value;
+
+      const body = {
+        text:                  document.getElementById('text').value,
+        language:              document.getElementById('language').value,
+        speaker:               speakerWavBase64 ? undefined : document.getElementById('speaker').value,
+        speaker_wav_base64:    speakerWavBase64 ?? undefined,
+        speed:                 parseFloat(document.getElementById('speed').value),
+        temperature:           parseFloat(document.getElementById('temperature').value),
+        repetition_penalty:    parseFloat(document.getElementById('repetition_penalty').value),
+        length_penalty:        parseFloat(document.getElementById('length_penalty').value),
+        top_k:                 parseInt(document.getElementById('top_k').value),
+        top_p:                 parseFloat(document.getElementById('top_p').value),
+        do_sample:             document.getElementById('do_sample').checked,
+        enable_text_splitting: document.getElementById('enable_text_splitting').checked,
+      };
+
+      try {
+        const res = await fetch(`${API}/tts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
+
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+
+        if (mode === 'play') {
+          audioPlayer.src = url;
+          audioCont.classList.remove('hidden');
+          audioPlayer.play();
+        } else {
+          const a = document.createElement('a');
+          a.href = url;
+          const now = new Date();
+          const ts = now.getFullYear().toString()
+            + String(now.getMonth() + 1).padStart(2, '0')
+            + String(now.getDate()).padStart(2, '0') + '-'
+            + String(now.getHours()).padStart(2, '0')
+            + String(now.getMinutes()).padStart(2, '0')
+            + String(now.getSeconds()).padStart(2, '0');
+          a.download = `coqui_${ts}.wav`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        label.textContent = 'Generate';
+        spin.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
