@@ -1,0 +1,26 @@
+### speakers list
+GET http://localhost:5002/api/speakers
+
+### languages list
+GET http://localhost:5002/api/languages
+
+### Generate speech
+POST http://localhost:5002/api/tts
+Content-Type: application/json
+
+{
+  "text": "Zażółć gęślą jaźń — klasyczny polski pangram do testowania syntezy mowy.",
+  "language": "pl",
+  "speaker": "Filip Traverse",
+  "speaker_wav_base64": null,
+  "speed": 1.0,
+  "temperature": 0.75,
+  "length_penalty": 1.0,
+  "repetition_penalty": 5.0,
+  "top_k": 50,
+  "top_p": 0.85,
+  "do_sample": true,
+  "enable_text_splitting": true
+}
+
+>> ../samples/output.wav

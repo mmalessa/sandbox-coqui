@@ -55,7 +55,7 @@ make tts-speakers
 ### Generate samples for all speakers
 
 ```bash
-./speaker-test.sh
+./generate-speaker-samples.sh
 ```
 
 This iterates over every available speaker and generates a WAV file in `samples/speakers/`.

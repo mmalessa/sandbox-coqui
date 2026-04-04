@@ -48,15 +48,43 @@ nv-prepare: ## Install nvidia-container-toolkit and configure Docker runtime
 	echo 'Now restart docker: sudo systemctl restart docker'
 
 .PHONY: tts-speakers
-tts-speakers:
+tts-speakers: ## List available speakers via CLI (requires container with sleep infinity)
 	@$(DC) exec ${APP} tts --model_name tts_models/multilingual/multi-dataset/xtts_v2 --list_speaker_idxs
 
 .PHONY: tts-talk
 TEXT := $(shell cat ./samples/input.txt)
-tts-talk:
+tts-talk: ## Generate speech via CLI (requires container with sleep infinity)
 	@$(DC) exec ${APP} tts \
 		--model_name tts_models/multilingual/multi-dataset/xtts_v2 \
 		--language_idx pl \
 		--speaker_idx "Filip Traverse" \
 		--out_path /samples/test.wav \
 		--text "$(TEXT)"
+
+### API
+API_URL = http://localhost:5002/api
+
+.PHONY: api-health
+api-health: ## Check API health
+	@curl -s $(API_URL)/health | python3 -m json.tool
+
+.PHONY: api-speakers
+api-speakers: ## List available speakers via API
+	@curl -s $(API_URL)/speakers | python3 -m json.tool
+
+.PHONY: api-languages
+api-languages: ## List supported languages via API
+	@curl -s $(API_URL)/languages | python3 -m json.tool
+
+.PHONY: api-tts
+TEXT := $(shell cat ./samples/input.txt)
+api-tts: ## Generate speech via API (saves to samples/test.wav)
+	@curl -s -X POST $(API_URL)/tts \
+		-H "Content-Type: application/json" \
+		-d '{"text": "$(TEXT)", "language": "pl", "speaker": "Filip Traverse"}' \
+		--output ./samples/test.wav
+	@echo "Saved to ./samples/test.wav"
+
+.PHONY: api-docs
+api-docs: ## Open interactive API docs in browser
+	@xdg-open $(API_URL)/docs 2>/dev/null || open $(API_URL)/docs 2>/dev/null || echo "Open: http://localhost:5002/api/docs"
