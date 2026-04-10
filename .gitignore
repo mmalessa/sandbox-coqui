@@ -1,4 +1,5 @@
 /.idea
+/compose.override.yaml
 /samples/*
 /samples/speakers/*
 
